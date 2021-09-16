@@ -28,6 +28,7 @@
  */
 
 const absolutePaths = require('./AbsolutePaths');
+const deepEqual = require('fast-deep-equal/es6');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -263,10 +264,11 @@ exports.dumpOnUncleanExit = false;
  */
 exports.indentationOnNewLine = true;
 
+const defaultLogConfig = {appenders: [{type: 'console'}]};
 /*
  * log4js appender configuration
  */
-exports.logconfig = {appenders: [{type: 'console'}]};
+exports.logconfig = defaultLogConfig;
 
 /*
  * Session Key, do not sure this.
@@ -703,9 +705,13 @@ exports.reloadSettings = () => {
   storeSettings(settings);
   storeSettings(credentials);
 
+  // log4js.configure() modifies exports.logconfig so check for equality first.
+  const logConfigIsDefault = deepEqual(exports.logconfig, defaultLogConfig);
   log4js.configure(exports.logconfig);// Configure the logging appenders
   log4js.setGlobalLogLevel(exports.loglevel);// set loglevel
   log4js.replaceConsole();
+  // Log the warning after configuring log4js to increase the chances the user will see it.
+  if (!logConfigIsDefault) logger.warn('The logconfig setting is deprecated.');
 
   if (!exports.skinName) {
     logger.warn('No "skinName" parameter found. Please check out settings.json.template and ' +
